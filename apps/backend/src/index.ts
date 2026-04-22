@@ -1,0 +1,160 @@
+import express, { Request, Response, NextFunction } from 'express';
+import helmet from 'helmet';
+import cors from 'cors';
+import cookieParser from 'cookie-parser';
+import crypto from 'crypto';
+import pinoHttp from 'pino-http';
+import { config, redactDatabaseUrl } from './config';
+import { pingDb } from './db/client';
+import { connectRedis, pingRedis, redis } from './db/redis';
+import { errorHandler } from './middleware/errors';
+import { requestId } from './middleware/requestId';
+import { apiLimiter } from './middleware/rateLimit';
+import { metricsMiddleware, register } from './middleware/metrics';
+import { logger } from './lib/logger';
+
+import authRouter from './routes/auth';
+import portalRouter from './routes/portal';
+import adminRouter from './routes/admin';
+import helpdeskRouter from './routes/helpdesk';
+import eventsRouter from './routes/events';
+
+const app = express();
+
+app.set('trust proxy', 1);
+
+app.use(
+  helmet({
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        imgSrc: ["'self'", 'data:', 'https:'],
+        connectSrc: ["'self'"],
+        scriptSrc: ["'self'"],
+        styleSrc: ["'self'", "'unsafe-inline'"],
+      },
+    },
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
+  })
+);
+
+app.use(
+  cors({
+    origin: config.CORS_ORIGIN,
+    credentials: true,
+  })
+);
+
+app.use(cookieParser());
+app.use(express.json({ limit: '1mb' }));
+app.use(requestId);
+app.use(pinoHttp({ logger, autoLogging: { ignore: (req) => (req.url || '').includes('/health') || (req.url || '').includes('/metrics') } }));
+app.use(metricsMiddleware);
+app.use(apiLimiter);
+
+// CSRF — double-submit
+function csrfMiddleware(req: Request, res: Response, next: NextFunction): void {
+  // Issue cookie on first request if missing
+  if (!req.cookies || !req.cookies['se_csrf']) {
+    const token = crypto.randomBytes(16).toString('hex');
+    res.cookie('se_csrf', token, {
+      httpOnly: false,
+      sameSite: 'lax',
+      secure: config.NODE_ENV === 'production',
+      path: '/',
+    });
+    // Attach to req.cookies so subsequent validation in same request sees it
+    req.cookies = req.cookies || {};
+    req.cookies['se_csrf'] = token;
+  }
+
+  const method = req.method.toUpperCase();
+  const needsCheck =
+    ['POST', 'PUT', 'DELETE', 'PATCH'].includes(method) &&
+    (req.path.startsWith('/api/admin') || req.path.startsWith('/api/helpdesk'));
+
+  if (!needsCheck) {
+    return next();
+  }
+
+  const cookieToken = req.cookies['se_csrf'];
+  const headerToken = req.headers['x-csrf-token'];
+  if (
+    typeof headerToken !== 'string' ||
+    !cookieToken ||
+    headerToken !== cookieToken
+  ) {
+    res.status(403).json({ error: 'csrf_mismatch' });
+    return;
+  }
+  next();
+}
+app.use(csrfMiddleware);
+
+// Health
+app.get('/api/health', async (_req, res) => {
+  const [dbOk, redisOk] = await Promise.all([pingDb(), pingRedis()]);
+  const healthy = dbOk; // Redis down is degraded, not unhealthy
+  res.status(healthy ? 200 : 503).json({
+    ok: healthy,
+    uptime: process.uptime(),
+    db: dbOk ? 'ok' : 'down',
+    redis: redisOk ? 'ok' : 'down',
+  });
+});
+
+// Prometheus metrics endpoint
+app.get('/api/metrics', async (_req, res) => {
+  res.setHeader('Content-Type', register.contentType);
+  res.end(await register.metrics());
+});
+
+// Mount
+app.use('/api/auth', authRouter);
+app.use('/api/portal', portalRouter);
+app.use('/api/admin', adminRouter);
+app.use('/api/helpdesk', helpdeskRouter);
+app.use('/api/events', eventsRouter);
+
+// 404 for unmatched API
+app.use('/api', (_req, res) => {
+  res.status(404).json({ error: 'not_found' });
+});
+
+app.use(errorHandler);
+
+// Bootstrap
+async function start(): Promise<void> {
+  await connectRedis();
+
+  const server = app.listen(config.PORT, () => {
+    // eslint-disable-next-line no-console
+    console.log(`\u{1F6E1}  SecureEdge backend listening on :${config.PORT}`);
+    // eslint-disable-next-line no-console
+    console.log(`    db: ${redactDatabaseUrl(config.DATABASE_URL)}`);
+    // eslint-disable-next-line no-console
+    console.log(`    redis: ${config.REDIS_URL}`);
+    // eslint-disable-next-line no-console
+    console.log(`    cors: ${config.CORS_ORIGIN}`);
+  });
+
+  function shutdown(): void {
+    // eslint-disable-next-line no-console
+    console.log('[server] shutting down');
+    server.close(async () => {
+      try { await redis.quit(); } catch { /* ignore */ }
+      process.exit(0);
+    });
+    setTimeout(() => process.exit(1), 10_000).unref();
+  }
+  process.on('SIGINT', shutdown);
+  process.on('SIGTERM', shutdown);
+}
+
+start().catch((err) => {
+  // eslint-disable-next-line no-console
+  console.error('[server] failed to start', err);
+  process.exit(1);
+});
+
+export default app;

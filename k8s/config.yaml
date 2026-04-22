@@ -1,0 +1,27 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: secureedge-config
+  labels:
+    app: secureedge
+data:
+  NODE_ENV: production
+  PORT: "3001"
+  SESSION_TTL_SECONDS: "3600"
+  # Override with your actual domain
+  CORS_ORIGIN: "https://secureedge.example.com"
+---
+# NOTE: In production, use SealedSecrets or ExternalSecrets instead of plain Secrets.
+# This template shows the structure — fill with base64-encoded values.
+apiVersion: v1
+kind: Secret
+metadata:
+  name: secureedge-secrets
+  labels:
+    app: secureedge
+type: Opaque
+data:
+  # echo -n 'your-value' | base64
+  DATABASE_URL: ""     # base64 of postgresql://...
+  REDIS_URL: ""        # base64 of redis://...
+  JWT_SECRET: ""       # base64 of 48+ char random string
