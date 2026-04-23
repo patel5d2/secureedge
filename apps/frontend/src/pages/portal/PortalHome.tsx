@@ -1,11 +1,12 @@
-import { useEffect, useState, useMemo } from 'react';
-import { Link } from 'react-router-dom';
+import { useEffect, useState, useMemo, useCallback } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
 import { Search, AlertTriangle, ExternalLink, Lock, CheckCircle2 } from 'lucide-react';
 import { api, type AppCard, type AppsResponse } from '../../lib/api';
 import { iconForSlug } from '../../lib/app-icons';
 import Input from '../../design-system/components/Input';
 import Badge from '../../design-system/components/Badge';
 import Spinner from '../../design-system/components/Spinner';
+import AppDetail from './AppDetail';
 
 type Filter = 'all' | 'accessible' | 'restricted';
 
@@ -14,6 +15,16 @@ export default function PortalHome() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<Filter>('all');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeAppId = searchParams.get('app');
+
+  const closeSheet = useCallback(() => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.delete('app');
+      return next;
+    }, { replace: true });
+  }, [setSearchParams]);
 
   useEffect(() => {
     api.get<AppsResponse>('/portal/apps').then((r) => {
@@ -123,6 +134,9 @@ export default function PortalHome() {
           ))}
         </div>
       )}
+
+      {/* Side sheet — slides in from the right; portal grid stays mounted behind it */}
+      <AppDetail appId={activeAppId} onClose={closeSheet} />
     </div>
   );
 }
@@ -131,7 +145,7 @@ function AppCardUI({ app }: { app: AppCard }) {
   const Icon = iconForSlug(app.slug);
   return (
     <Link
-      to={`/portal/app/${app.id}`}
+      to={`/portal?app=${app.id}`}
       id={`app-card-${app.slug}`}
       className="group relative flex flex-col rounded-xl border border-border bg-surface p-5 shadow-sm transition-all hover:shadow-md hover:border-primary/20 hover:-translate-y-0.5"
     >

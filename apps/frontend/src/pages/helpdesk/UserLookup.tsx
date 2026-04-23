@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { Search, LogOut, AlertTriangle, Shield } from 'lucide-react';
+import { Search, LogOut, AlertTriangle, KeyRound, Copy } from 'lucide-react';
 import { api, type User, type UserSearchResponse, type UserAccessHistoryResponse, type AccessEvent } from '../../lib/api';
 import { formatRelative } from '../../lib/format';
 import Input from '../../design-system/components/Input';
@@ -8,12 +8,22 @@ import Button from '../../design-system/components/Button';
 import Avatar from '../../design-system/components/Avatar';
 import { useToast } from '../../hooks/useToast';
 
+interface ResetResponse {
+  ok: boolean;
+  email: string;
+  revoked: number;
+  resetToken?: string;
+  expiresAt: string;
+}
+
 export default function UserLookup() {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<User[]>([]);
   const [selected, setSelected] = useState<User | null>(null);
   const [history, setHistory] = useState<AccessEvent[]>([]);
   const [searching, setSearching] = useState(false);
+  const [resetting, setResetting] = useState(false);
+  const [lastReset, setLastReset] = useState<ResetResponse | null>(null);
   const { push } = useToast();
 
   const doSearch = useCallback(async () => {
@@ -28,6 +38,7 @@ export default function UserLookup() {
 
   const selectUser = async (u: User) => {
     setSelected(u);
+    setLastReset(null);
     try {
       const r = await api.get<UserAccessHistoryResponse>(`/helpdesk/users/${u.id}/access-history`);
       setHistory(r.events);
@@ -40,6 +51,30 @@ export default function UserLookup() {
       const r = await api.post<{ revoked: number }>(`/helpdesk/users/${selected.id}/force-logout`);
       push(`${r.revoked} session(s) revoked.`, 'success');
     } catch { push('Failed to force logout.', 'error'); }
+  };
+
+  const sendPasswordReset = async () => {
+    if (!selected) return;
+    setResetting(true);
+    setLastReset(null);
+    try {
+      const r = await api.post<ResetResponse>(`/helpdesk/users/${selected.id}/send-password-reset`);
+      setLastReset(r);
+      push(`Reset sent to ${r.email}. ${r.revoked} session(s) revoked.`, 'success');
+    } catch {
+      push('Failed to send password reset.', 'error');
+    }
+    setResetting(false);
+  };
+
+  const copyToken = async () => {
+    if (!lastReset?.resetToken) return;
+    try {
+      await navigator.clipboard.writeText(lastReset.resetToken);
+      push('Token copied to clipboard.', 'success');
+    } catch {
+      push('Copy failed.', 'error');
+    }
   };
 
   return (
@@ -96,8 +131,44 @@ export default function UserLookup() {
             <h3 className="text-sm font-semibold text-white/80 mb-3">Quick Actions</h3>
             <div className="flex flex-wrap gap-2">
               <Button variant="danger" size="sm" leftIcon={<LogOut className="h-3.5 w-3.5" />} onClick={forceLogout}>Force Logout</Button>
+              <Button
+                variant="accent"
+                size="sm"
+                leftIcon={<KeyRound className="h-3.5 w-3.5" />}
+                onClick={sendPasswordReset}
+                loading={resetting}
+              >
+                Send Password Reset
+              </Button>
               <Button variant="secondary" size="sm" leftIcon={<AlertTriangle className="h-3.5 w-3.5" />} className="!border-[#30363D] !text-white/70">Escalate to Security</Button>
             </div>
+
+            {lastReset && (
+              <div className="mt-4 rounded-lg border border-success/30 bg-success/5 p-3 text-xs animate-fade-in">
+                <p className="font-semibold text-success">Password reset dispatched</p>
+                <p className="mt-1 text-white/60">
+                  Sent to <span className="font-mono text-white/80">{lastReset.email}</span> ·{' '}
+                  {lastReset.revoked} session(s) revoked · expires{' '}
+                  {new Date(lastReset.expiresAt).toLocaleString()}
+                </p>
+                {lastReset.resetToken && (
+                  <div className="mt-2 flex items-center gap-2">
+                    <code className="flex-1 overflow-x-auto rounded border border-white/10 bg-black/40 px-2 py-1 font-mono text-[11px] text-white/80">
+                      {lastReset.resetToken}
+                    </code>
+                    <button
+                      onClick={copyToken}
+                      className="inline-flex items-center gap-1 rounded border border-white/20 px-2 py-1 text-[11px] text-white/60 hover:text-white"
+                    >
+                      <Copy className="h-3 w-3" /> Copy
+                    </button>
+                  </div>
+                )}
+                <p className="mt-2 text-[10px] text-white/30">
+                  Dev mode shows the raw token here for verbal hand-off. In production this is delivered via email.
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Access history */}

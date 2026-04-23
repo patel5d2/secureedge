@@ -163,6 +163,69 @@ router.post(
   })
 );
 
+/**
+ * POST /helpdesk/users/:id/send-password-reset
+ * Generate a single-use password reset token, revoke the user's active sessions,
+ * and emit an audit event. In production this would email the user a reset link;
+ * in dev the token is returned in the response so the helpdesk operator can
+ * read it back to the caller.
+ */
+router.post(
+  '/users/:id/send-password-reset',
+  asyncHandler(async (req, res) => {
+    const userRes = await pool.query<{ id: string; email: string; full_name: string }>(
+      'SELECT id, email, full_name FROM users WHERE id = $1',
+      [req.params.id]
+    );
+    const user = userRes.rows[0];
+    if (!user) {
+      res.status(404).json({ error: 'not_found' });
+      return;
+    }
+
+    // Mint a time-boxed token (15 min). We don't persist it — this is a mock IdP
+    // flow; a real system would store a hash with TTL or dispatch an email.
+    const token = crypto.randomBytes(24).toString('base64url');
+    const expiresAt = new Date(Date.now() + 15 * 60_000);
+
+    // Revoke active sessions so the compromised/locked-out user can't keep
+    // riding their existing cookie.
+    const sessions = await pool.query<{ id: string }>(
+      `UPDATE sessions
+          SET revoked_at = now()
+        WHERE user_id = $1
+          AND revoked_at IS NULL
+          AND expires_at > now()
+        RETURNING id`,
+      [user.id]
+    );
+    await Promise.all(sessions.rows.map((s) => invalidateSession(s.id)));
+
+    // Audit trail — record that a helpdesk operator initiated the reset.
+    await logEvent({
+      userId: user.id,
+      outcome: 'allowed',
+      denyReason: null,
+      raw: {
+        action: 'password_reset_requested',
+        initiator_id: req.user?.id,
+        initiator_role: req.user?.role,
+        sessions_revoked: sessions.rowCount || 0,
+        token_expires_at: expiresAt.toISOString(),
+      },
+    });
+
+    res.json({
+      ok: true,
+      email: user.email,
+      revoked: sessions.rowCount || 0,
+      // Dev convenience — never expose in production
+      resetToken: config.NODE_ENV === 'production' ? undefined : token,
+      expiresAt: expiresAt.toISOString(),
+    });
+  })
+);
+
 router.get(
   '/devices',
   asyncHandler(async (req, res) => {

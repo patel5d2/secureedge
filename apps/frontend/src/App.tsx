@@ -9,7 +9,6 @@ import MfaPage from './pages/auth/MfaPage';
 import AccessDeniedPage from './pages/auth/AccessDeniedPage';
 
 import PortalHome from './pages/portal/PortalHome';
-import AppDetail from './pages/portal/AppDetail';
 import SessionsPage from './pages/portal/SessionsPage';
 import DevicesPage from './pages/portal/DevicesPage';
 import ProfilePage from './pages/portal/ProfilePage';
@@ -51,8 +50,9 @@ export const router = createBrowserRouter([
   {
     element: <PortalLayout />,
     children: [
+      // App detail is rendered as a side-sheet drawer inside PortalHome,
+      // keyed off the ?app= search param (keeps the grid mounted behind it).
       { path: '/portal', element: <PortalHome /> },
-      { path: '/portal/app/:id', element: <AppDetail /> },
       { path: '/portal/sessions', element: <SessionsPage /> },
       { path: '/portal/devices', element: <DevicesPage /> },
       { path: '/portal/profile', element: <ProfilePage /> },
