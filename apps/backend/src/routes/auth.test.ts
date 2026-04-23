@@ -194,7 +194,7 @@ describe('POST /api/auth/login', () => {
       .post('/api/auth/login')
       .send({ email: 'test@secureedge.dev', password: 'correct-password' });
 
-    const cookies = res.headers['set-cookie'] as string[];
+    const cookies = res.headers['set-cookie'] as unknown as string[];
     const tokenCookie = cookies.find((c) => c.startsWith('se_token='));
     const tokenValue = tokenCookie!.split('=')[1].split(';')[0];
     const payload = jwt.decode(tokenValue) as Record<string, unknown>;
@@ -265,7 +265,7 @@ describe('POST /api/auth/mfa', () => {
     expect(res.body.user.email).toBe('test@secureedge.dev');
 
     // New JWT should have mfa=true
-    const cookies = res.headers['set-cookie'] as string[];
+    const cookies = res.headers['set-cookie'] as unknown as string[];
     const tokenCookie = cookies.find((c) => c.startsWith('se_token='));
     const tokenValue = tokenCookie!.split('=')[1].split(';')[0];
     const payload = jwt.decode(tokenValue) as Record<string, unknown>;
