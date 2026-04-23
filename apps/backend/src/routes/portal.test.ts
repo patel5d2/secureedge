@@ -120,6 +120,38 @@ describe('GET /api/portal/apps/:id', () => {
     expect(res.body.simulate).toBeDefined();
   });
 
+  it('derives requirements from policy conditions', async () => {
+    mockQuery.mockResolvedValueOnce({ rows: [activeUser] }); // loadUser
+    mockQuery.mockResolvedValueOnce({
+      rows: [{ id: 'app-1', name: 'App', slug: 'app', app_url: 'https://a.com', required_mfa: false }],
+    }); // app
+    mockQuery.mockResolvedValueOnce({
+      rows: [{
+        rules: {
+          what: { applications: ['app-1'] },
+          who: { groups: ['g-1'] },
+          conditions: [
+            { type: 'device_managed', value: true },
+            { type: 'disk_encrypted', value: true },
+            { type: 'mfa_verified', value: true },
+          ],
+        },
+      }],
+    }); // policies
+    mockQuery.mockResolvedValueOnce({ rows: [{ group_id: 'g-1' }] }); // user_groups
+    mockQuery.mockResolvedValueOnce({ rows: [{ id: 'g-1', name: 'Engineers' }] }); // groups
+
+    const res = await request(app)
+      .get('/api/portal/apps/app-1')
+      .set('Cookie', `se_token=${userToken()}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.requirements.managed).toBe(true);
+    expect(res.body.requirements.encrypted).toBe(true);
+    expect(res.body.requirements.mfa).toBe(true);
+    expect(res.body.accessGroups).toHaveLength(1);
+  });
+
   it('returns 404 for non-existent app', async () => {
     mockQuery.mockResolvedValueOnce({ rows: [activeUser] });
     mockQuery.mockResolvedValueOnce({ rows: [] });
@@ -131,6 +163,7 @@ describe('GET /api/portal/apps/:id', () => {
     expect(res.status).toBe(404);
   });
 });
+
 
 describe('GET /api/portal/sessions', () => {
   const app = createApp();
