@@ -1,5 +1,6 @@
 import { pool } from '../db/client';
 import { AccessEvent, AccessOutcome } from '../types';
+import { logger } from '../lib/logger';
 
 export interface LogEventInput {
   userId?: string | null;
@@ -35,8 +36,7 @@ function broadcast(ev: EnrichedAccessEvent): void {
     try {
       s(ev);
     } catch (e) {
-      // eslint-disable-next-line no-console
-      console.error('[auditLog] subscriber error', e);
+      logger.error({ err: e }, 'audit log subscriber error');
     }
   }
 }

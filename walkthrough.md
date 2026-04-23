@@ -1942,14 +1942,38 @@ export default app;
 - ✅ `npx tsc --noEmit` passes with zero errors
 - ✅ All new files created with correct structure
 - ✅ 4 new migrations: `003_session_mfa.sql`, `004_performance_indexes.sql`
+- ✅ **60 unit tests passing** across 6 test files (504ms)
 
 ---
 
-## Remaining Work
+## Final Completion Pass
 
-| Phase | Items |
-|---|---|
-| **Phase 4: Testing** | Install Vitest, write auth/policy/posture/middleware unit tests, integration tests |
-| **Phase 5: Pagination** | Add pagination to admin users, applications, groups, helpdesk devices/alerts endpoints |
-| **Phase 6: Logging + Metrics** | Replace `console.log` with `pino`, add Prometheus metrics endpoint |
-| **Phase 7: Kubernetes** | Deployment, Service, Ingress, HPA, PDB, ConfigMap, Sealed Secrets |
+All phases are now complete. The final pass addressed:
+
+### Phase 4: Test Suite (completed)
+- **Auth route tests** (16 tests): login validation, password verification, inactive accounts, MFA flow, logout session revocation, /me endpoint
+- **Auth middleware tests** (8 tests): signToken JWT claims, session IDs, MFA flags, expiry, secret verification
+- **Policy engine tests** (12 tests): condition evaluation, priority ordering, group/user matching
+- **Posture check tests** (13 tests): scoreDevice scoring matrix, postureOk threshold
+- **Error handler tests** (6 tests): ZodError, HttpError, unknown errors, headers-sent guard, asyncHandler
+- **RBAC middleware tests** (5 tests): role matching, 401/403 discrimination
+- Framework: Vitest + Supertest, configured with coverage (v8 provider)
+
+### Phase 5: Pagination (already completed in prior sessions)
+All admin and helpdesk list endpoints already had pagination (page/limit/search/total).
+
+### Phase 6: Structured Logging (completed)
+Replaced **all** `console.log/error/warn` calls in runtime modules with pino structured logger:
+- `db/client.ts` — pool error events
+- `db/redis.ts` — connection lifecycle (error, connect, fallback)
+- `middleware/errors.ts` — unhandled error logging
+- `services/auditLog.ts` — subscriber error logging
+- `routes/events.ts` — SSE tick errors
+- `index.ts` — server startup, shutdown, fatal startup errors
+- `config.ts` — JWT secret dev warning (uses pino directly to avoid circular import)
+
+Prometheus metrics endpoint was already live at `/api/metrics` with: `http_requests_total`, `http_request_duration_seconds`, `policy_evaluation_duration_seconds`, `sse_active_connections`, `db_pool_*` gauges.
+
+### Phase 7: Kubernetes (already completed in prior sessions)
+All K8s manifests were already in place: Deployment, Service+Ingress, HPA, PDB, ConfigMap+Secrets.
+

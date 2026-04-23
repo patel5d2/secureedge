@@ -1,5 +1,6 @@
 import { Pool } from 'pg';
 import { config } from '../config';
+import { logger } from '../lib/logger';
 
 export const pool = new Pool({
   connectionString: config.DATABASE_URL,
@@ -12,8 +13,7 @@ export const pool = new Pool({
 } as ConstructorParameters<typeof Pool>[0]);
 
 pool.on('error', (err) => {
-  // eslint-disable-next-line no-console
-  console.error('[pg] unexpected pool error', err);
+  logger.error({ err }, 'unexpected database pool error');
 });
 
 export async function pingDb(): Promise<boolean> {

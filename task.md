@@ -21,33 +21,38 @@
 - [x] `docker-compose.prod.yml` (resource limits, health checks, Prometheus + Grafana)
 - [x] GitHub Actions CI pipeline (lint, test, security scan, Docker build)
 
-## Phase 4: Test Suite
-- [ ] Install test framework (Vitest for backend)
-- [ ] Auth route unit tests
-- [ ] Policy engine unit tests
-- [ ] Posture check unit tests
-- [ ] Middleware unit tests
-- [ ] Integration test setup (testcontainers)
+## Phase 4: Test Suite ✅
+- [x] Install test framework (Vitest + Supertest)
+- [x] Auth route unit tests (login, MFA, logout, /me — 16 tests)
+- [x] Auth middleware unit tests (signToken — 8 tests)
+- [x] Policy engine unit tests (simulate, userCanAccess — 12 tests)
+- [x] Posture check unit tests (scoreDevice, postureOk — 13 tests)
+- [x] Error handler + asyncHandler tests (6 tests)
+- [x] RBAC middleware unit tests (5 tests)
+- [ ] Integration test setup (testcontainers) — requires Docker runtime
 
-## Phase 5: Scalability ✅ (partial)
+## Phase 5: Scalability ✅
 - [x] Policy engine caching with invalidation (30s TTL)
 - [x] Cache invalidation wired into admin CRUD routes
-- [ ] Add pagination to admin users, applications, groups, helpdesk devices/alerts
+- [x] Add pagination to admin users, applications, groups
+- [x] Add pagination to helpdesk devices and alerts
 - [x] Tune DB connection pool (max 25 prod, timeouts)
 - [x] Add missing DB indexes (migration 004)
 - [x] Fix SSE synthetic events (broadcast-only, no DB write in dev)
 
-## Phase 6: Observability (partial)
+## Phase 6: Observability ✅
 - [x] Add request ID middleware (`X-Request-Id`)
 - [x] Enhanced health check (DB + Redis status)
 - [x] Prometheus config (`infra/prometheus.yml`)
-- [ ] Add pino structured logging (replace console.log)
-- [ ] Add Prometheus metrics endpoint
+- [x] Add pino structured logging (replace console.log in all runtime modules)
+- [x] Add pino-http request logging middleware
+- [x] Add Prometheus metrics endpoint (`/api/metrics`)
+- [x] Prometheus metrics: HTTP counters, histograms, DB pool gauges, SSE connections
 - [x] API-wide rate limiter added
 
-## Phase 7: Kubernetes & Production
-- [ ] K8s Deployment manifest
-- [ ] K8s Service + Ingress
-- [ ] HPA (Horizontal Pod Autoscaler)
-- [ ] PodDisruptionBudget
-- [ ] ConfigMap + Sealed Secrets
+## Phase 7: Kubernetes & Production ✅
+- [x] K8s Deployment manifest (3 replicas, rolling update, probes, non-root)
+- [x] K8s Service + Ingress (TLS, rate limiting, SSE proxy support)
+- [x] HPA (Horizontal Pod Autoscaler — min 3, max 20, CPU/memory)
+- [x] PodDisruptionBudget (minAvailable: 2)
+- [x] ConfigMap + Secrets (with SealedSecrets guidance)

@@ -24,8 +24,10 @@ if (config.NODE_ENV === 'production') {
     throw new Error('JWT_SECRET must not use the default dev value in production.');
   }
 } else if (config.JWT_SECRET === 'dev-secret-change-me') {
-  // eslint-disable-next-line no-console
-  console.warn('[config] ⚠️  Using default JWT_SECRET — do NOT use in production');
+  // Use pino directly here (logger.ts depends on config, so we avoid circular import)
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const pino = require('pino');
+  pino().warn('Using default JWT_SECRET — do NOT use in production');
 }
 
 export function redactDatabaseUrl(url: string): string {

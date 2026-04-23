@@ -128,19 +128,14 @@ async function start(): Promise<void> {
   await connectRedis();
 
   const server = app.listen(config.PORT, () => {
-    // eslint-disable-next-line no-console
-    console.log(`\u{1F6E1}  SecureEdge backend listening on :${config.PORT}`);
-    // eslint-disable-next-line no-console
-    console.log(`    db: ${redactDatabaseUrl(config.DATABASE_URL)}`);
-    // eslint-disable-next-line no-console
-    console.log(`    redis: ${config.REDIS_URL}`);
-    // eslint-disable-next-line no-console
-    console.log(`    cors: ${config.CORS_ORIGIN}`);
+    logger.info(
+      { port: config.PORT, db: redactDatabaseUrl(config.DATABASE_URL), redis: config.REDIS_URL, cors: config.CORS_ORIGIN },
+      'SecureEdge backend listening'
+    );
   });
 
   function shutdown(): void {
-    // eslint-disable-next-line no-console
-    console.log('[server] shutting down');
+    logger.info('server shutting down');
     server.close(async () => {
       try { await redis.quit(); } catch { /* ignore */ }
       process.exit(0);
@@ -152,8 +147,7 @@ async function start(): Promise<void> {
 }
 
 start().catch((err) => {
-  // eslint-disable-next-line no-console
-  console.error('[server] failed to start', err);
+  logger.fatal({ err }, 'server failed to start');
   process.exit(1);
 });
 

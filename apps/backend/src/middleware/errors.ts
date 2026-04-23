@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction, RequestHandler } from 'express';
 import { ZodError } from 'zod';
+import { logger } from '../lib/logger';
 
 export const asyncHandler =
   (fn: RequestHandler): RequestHandler =>
@@ -47,7 +48,6 @@ export function errorHandler(
     return;
   }
 
-  // eslint-disable-next-line no-console
-  console.error('[error]', err);
+  logger.error({ err }, 'unhandled server error');
   res.status(500).json({ error: 'internal_server_error' });
 }

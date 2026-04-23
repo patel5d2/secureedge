@@ -1,5 +1,6 @@
 import Redis from 'ioredis';
 import { config } from '../config';
+import { logger } from '../lib/logger';
 
 export const redis = new Redis(config.REDIS_URL, {
   maxRetriesPerRequest: 3,
@@ -11,21 +12,18 @@ export const redis = new Redis(config.REDIS_URL, {
 });
 
 redis.on('error', (err) => {
-  // eslint-disable-next-line no-console
-  console.error('[redis] connection error', err.message);
+  logger.error({ err: err.message }, 'redis connection error');
 });
 
 redis.on('connect', () => {
-  // eslint-disable-next-line no-console
-  console.log('[redis] connected');
+  logger.info('redis connected');
 });
 
 export async function connectRedis(): Promise<void> {
   try {
     await redis.connect();
   } catch (err) {
-    // eslint-disable-next-line no-console
-    console.error('[redis] failed to connect — falling back to in-memory', err);
+    logger.warn({ err }, 'redis failed to connect — falling back to in-memory');
   }
 }
 

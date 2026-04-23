@@ -3,6 +3,7 @@ import { v4 as uuid } from 'uuid';
 import { requireAuth } from '../middleware/auth';
 import { pool } from '../db/client';
 import { config } from '../config';
+import { logger } from '../lib/logger';
 import {
   EnrichedAccessEvent,
   subscribe,
@@ -76,8 +77,7 @@ router.get('/stream', requireAuth, async (req, res) => {
         };
         write('access', syntheticEvent);
       } catch (e) {
-        // eslint-disable-next-line no-console
-        console.error('[sse] tick error', e);
+        logger.error({ err: e }, 'SSE synthetic tick error');
       }
     }, 3000);
   }

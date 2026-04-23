@@ -3,6 +3,15 @@ import { errorHandler, HttpError, asyncHandler } from './errors';
 import { ZodError, ZodIssue } from 'zod';
 import type { Request, Response, NextFunction } from 'express';
 
+// Mock the logger used by errorHandler
+vi.mock('../lib/logger', () => ({
+  logger: {
+    error: vi.fn(),
+    warn: vi.fn(),
+    info: vi.fn(),
+  },
+}));
+
 function mockRes(): any {
   const res: any = {
     statusCode: 200,
@@ -46,13 +55,11 @@ describe('errorHandler', () => {
   it('handles unknown errors as 500', () => {
     const err = new Error('kaboom');
     const res = mockRes();
-    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
     errorHandler(err, req, res, next);
 
     expect(res.statusCode).toBe(500);
     expect(res.body.error).toBe('internal_server_error');
-    consoleSpy.mockRestore();
   });
 
   it('skips if headers already sent', () => {
