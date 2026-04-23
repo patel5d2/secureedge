@@ -16,8 +16,15 @@ export default defineConfig({
         'src/types.ts',
         'src/types/**',
       ],
+      thresholds: {
+        statements: 88,
+        branches: 75,
+        functions: 85,
+        lines: 92,
+      },
     },
     // Timeout per test
     testTimeout: 10_000,
   },
 });
+

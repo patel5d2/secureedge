@@ -260,4 +260,55 @@ describe('GET /api/helpdesk/devices', () => {
     expect(res.body.devices).toHaveLength(1);
     expect(res.body.total).toBe(1);
   });
+
+  it('supports device search', async () => {
+    mockQuery.mockResolvedValueOnce({ rows: [helpdeskUser] });
+    mockQuery.mockResolvedValueOnce({ rows: [{ total: 1 }] });
+    mockQuery.mockResolvedValueOnce({ rows: [{ id: 'd-1' }] });
+
+    const res = await request(app)
+      .get('/api/helpdesk/devices?search=mac')
+      .set('Cookie', `se_token=${helpdeskToken()}`);
+
+    expect(res.status).toBe(200);
+  });
 });
+
+describe('GET /api/helpdesk/users/:id/access-history', () => {
+  const app = createApp();
+
+  it('returns user access events', async () => {
+    mockQuery.mockResolvedValueOnce({ rows: [helpdeskUser] });
+    mockQuery.mockResolvedValueOnce({
+      rows: [
+        { id: 'ev-1', outcome: 'allowed', app_name: 'App1' },
+        { id: 'ev-2', outcome: 'denied', app_name: 'App2' },
+      ],
+    });
+
+    const res = await request(app)
+      .get('/api/helpdesk/users/u-1/access-history')
+      .set('Cookie', `se_token=${helpdeskToken()}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.events).toHaveLength(2);
+  });
+});
+
+describe('GET /api/helpdesk/alerts — filters', () => {
+  const app = createApp();
+
+  it('filters alerts by severity and status', async () => {
+    mockQuery.mockResolvedValueOnce({ rows: [helpdeskUser] });
+    mockQuery.mockResolvedValueOnce({ rows: [{ total: 1 }] });
+    mockQuery.mockResolvedValueOnce({ rows: [{ id: 'a-1', severity: 'critical', status: 'open' }] });
+
+    const res = await request(app)
+      .get('/api/helpdesk/alerts?severity=critical&status=open')
+      .set('Cookie', `se_token=${helpdeskToken()}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.alerts).toHaveLength(1);
+  });
+});
+
