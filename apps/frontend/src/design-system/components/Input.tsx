@@ -6,6 +6,7 @@ interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   leftIcon?: ReactNode;
   rightIcon?: ReactNode;
   hint?: string;
+  helperText?: string;
   containerClassName?: string;
 }
 
@@ -16,6 +17,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
     leftIcon,
     rightIcon,
     hint,
+    helperText,
     id,
     type = 'text',
     className = '',
@@ -25,6 +27,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
   },
   ref
 ) {
+  const hintText = hint || helperText;
   const uid = useId();
   const inputId = id || uid;
   const hasError = !!error;
@@ -55,8 +58,8 @@ const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
       </div>
       {hasError ? (
         <span className="text-xs text-danger">{error}</span>
-      ) : hint ? (
-        <span className="text-xs text-text-muted">{hint}</span>
+      ) : hintText ? (
+        <span className="text-xs text-text-muted">{hintText}</span>
       ) : null}
     </div>
   );
