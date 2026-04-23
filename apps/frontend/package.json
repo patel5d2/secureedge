@@ -6,7 +6,7 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
-    "type-check": "tsc -b --noEmit"
+    "type-check": "tsc --noEmit"
   },
   "dependencies": {
     "@tanstack/react-table": "^8.11.2",
