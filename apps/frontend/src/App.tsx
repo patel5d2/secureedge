@@ -6,6 +6,7 @@ import HelpdeskLayout from './layouts/HelpdeskLayout';
 
 import LoginPage from './pages/auth/LoginPage';
 import MfaPage from './pages/auth/MfaPage';
+import AccessDeniedPage from './pages/auth/AccessDeniedPage';
 
 import PortalHome from './pages/portal/PortalHome';
 import AppDetail from './pages/portal/AppDetail';
@@ -34,6 +35,11 @@ export const router = createBrowserRouter([
   {
     path: '/',
     element: <Navigate to="/portal" replace />,
+  },
+  {
+    // Access Denied renders standalone (no layout chrome, dark gradient like auth)
+    path: '/access-denied',
+    element: <AccessDeniedPage />,
   },
   {
     element: <AuthLayout />,

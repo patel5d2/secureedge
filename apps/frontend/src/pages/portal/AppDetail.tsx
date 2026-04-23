@@ -49,7 +49,7 @@ export default function AppDetail() {
 
   const { app, requirements, accessGroups, simulate } = data;
   const Icon = iconForSlug(app.slug);
-  const isAllowed = simulate.allowed;
+  const isAllowed = simulate.outcome === 'allowed';
 
   const checks = [
     { label: 'Managed device', met: !requirements.managed || simulate.conditions_checked?.find(c => c.type === 'device_managed')?.passed !== false, required: requirements.managed },

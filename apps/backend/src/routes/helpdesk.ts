@@ -1,10 +1,13 @@
 import { Router } from 'express';
+import crypto from 'node:crypto';
 import { z } from 'zod';
 import { pool } from '../db/client';
 import { asyncHandler } from '../middleware/errors';
 import { requireAuth } from '../middleware/auth';
 import { requireRole } from '../middleware/rbac';
 import { invalidateSession } from '../db/redis';
+import { logEvent } from '../services/auditLog';
+import { config } from '../config';
 
 const router = Router();
 

@@ -1,4 +1,4 @@
-import { NavLink, Outlet, useNavigate } from 'react-router-dom';
+import { NavLink, Outlet, useNavigate, Navigate, useLocation } from 'react-router-dom';
 import { Activity, AlertTriangle, Search, Laptop, LogOut, ShieldCheck } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import Avatar from '../design-system/components/Avatar';
@@ -13,18 +13,21 @@ const navItems = [
 export default function HelpdeskLayout() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const onLogout = async () => { await logout(); navigate('/login', { replace: true }); };
 
   if (user && user.role !== 'helpdesk' && user.role !== 'admin') {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#0D1117]">
-        <div className="text-center text-white/80">
-          <p className="text-lg font-semibold">Access Denied</p>
-          <p className="mt-1 text-sm text-white/50">You need helpdesk or admin privileges.</p>
-          <button onClick={() => navigate('/portal')} className="mt-4 text-sm text-info hover:underline">Go to Portal</button>
-        </div>
-      </div>
+      <Navigate
+        to="/access-denied"
+        replace
+        state={{
+          reason: 'The Helpdesk / SOC console is restricted to helpdesk and admin users.',
+          requiredRole: 'helpdesk',
+          attemptedPath: location.pathname,
+        }}
+      />
     );
   }
 

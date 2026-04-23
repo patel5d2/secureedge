@@ -59,7 +59,7 @@ function csrfMiddleware(req: Request, res: Response, next: NextFunction): void {
     const token = crypto.randomBytes(16).toString('hex');
     res.cookie('se_csrf', token, {
       httpOnly: false,
-      sameSite: 'lax',
+      sameSite: 'strict',
       secure: config.NODE_ENV === 'production',
       path: '/',
     });

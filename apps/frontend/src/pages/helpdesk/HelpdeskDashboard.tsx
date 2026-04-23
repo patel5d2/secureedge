@@ -75,8 +75,8 @@ export default function HelpdeskDashboard() {
                   <span className="text-white/60">{ev.app_name || '—'}</span>
                 </div>
                 <div className="flex items-center gap-2 text-white/30">
-                  <span className="font-mono">{ev.ip}</span>
-                  {ev.country && <span>{ev.country}</span>}
+                  <span className="font-mono">{ev.ip_address || '—'}</span>
+                  {ev.geo_country && <span>{ev.geo_country}</span>}
                   <Clock className="h-3 w-3" />
                   <span>{formatTime(ev.timestamp)}</span>
                 </div>

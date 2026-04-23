@@ -134,8 +134,8 @@ function SessionCard({
             </div>
             <div className="flex flex-wrap items-center gap-3 text-xs text-text-secondary">
               <span className="inline-flex items-center gap-1">
-                <Globe className="h-3 w-3" /> {session.ip}
-                {session.country && ` · ${session.country}`}
+                <Globe className="h-3 w-3" /> {session.ip_address || 'unknown'}
+                {session.geo_country && ` · ${session.geo_country}`}
               </span>
               <span className="inline-flex items-center gap-1">
                 <Clock className="h-3 w-3" /> Started {formatRelative(session.started_at)}

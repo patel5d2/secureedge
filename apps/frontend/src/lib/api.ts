@@ -158,10 +158,10 @@ export interface Session {
   revoked_at?: string | null;
   device_name?: string;
   device_id?: string;
-  ip: string;
+  ip_address: string | null;
   user_agent: string;
   status: 'active' | 'revoked' | 'expired';
-  country?: string;
+  geo_country?: string | null;
 }
 
 export type AccessOutcome = 'allow' | 'deny' | 'allowed' | 'denied';
@@ -180,8 +180,8 @@ export interface AccessEvent {
   deny_reason?: string | null;
   policy_id?: string | null;
   policy_name?: string | null;
-  ip: string;
-  country?: string;
+  ip_address: string | null;
+  geo_country?: string | null;
   lat?: number;
   lon?: number;
   user_agent?: string;
@@ -235,13 +235,17 @@ export interface ConditionCheck {
 }
 
 export interface SimulateResult {
-  allowed: boolean;
-  outcome?: string;
+  /** Backend returns 'allowed' | 'denied'. */
+  outcome: 'allowed' | 'denied';
   policyId?: string | null;
   policyName?: string | null;
   reason?: string | null;
   conditions_checked?: ConditionCheck[];
 }
+
+/** Convenience helper: treat any non-'denied' outcome as allowed. */
+export const isAllowed = (r: Pick<SimulateResult, 'outcome'> | null | undefined): boolean =>
+  r?.outcome === 'allowed';
 
 export interface OverviewStats {
   activeUsers24h: number;

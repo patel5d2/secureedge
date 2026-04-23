@@ -180,16 +180,32 @@ export default function PolicyEditor() {
                 {apps.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
               </select>
               <Button variant="secondary" size="sm" className="w-full" onClick={simulate} loading={simulating} leftIcon={<FlaskConical className="h-3.5 w-3.5" />}>Simulate</Button>
-              {simResult && (
-                <div className={`rounded-lg border p-4 animate-fade-in ${simResult.allowed ? 'border-success/20 bg-success/5' : 'border-danger/20 bg-danger/5'}`}>
+              {simResult && (() => {
+                const allowed = simResult.outcome === 'allowed';
+                return (
+                <div className={`rounded-lg border p-4 animate-fade-in ${allowed ? 'border-success/20 bg-success/5' : 'border-danger/20 bg-danger/5'}`}>
                   <div className="flex items-center gap-2">
-                    {simResult.allowed ? <CheckCircle2 className="h-5 w-5 text-success" /> : <XCircle className="h-5 w-5 text-danger" />}
-                    <span className={`text-sm font-semibold ${simResult.allowed ? 'text-success' : 'text-danger'}`}>{simResult.allowed ? 'ALLOWED' : 'DENIED'}</span>
+                    {allowed ? <CheckCircle2 className="h-5 w-5 text-success" /> : <XCircle className="h-5 w-5 text-danger" />}
+                    <span className={`text-sm font-semibold ${allowed ? 'text-success' : 'text-danger'}`}>{allowed ? 'ALLOWED' : 'DENIED'}</span>
                   </div>
                   {simResult.reason && <p className="mt-2 text-xs text-text-secondary">Reason: {simResult.reason.replace(/_/g, ' ')}</p>}
                   {simResult.policyName && <p className="mt-1 text-xs text-text-muted">Policy: {simResult.policyName}</p>}
+                  {simResult.conditions_checked && simResult.conditions_checked.length > 0 && (
+                    <ul className="mt-3 space-y-1 border-t border-border/50 pt-3 text-xs">
+                      {simResult.conditions_checked.map((c, i) => (
+                        <li key={i} className="flex items-center gap-1.5">
+                          {c.passed
+                            ? <CheckCircle2 className="h-3 w-3 text-success flex-shrink-0" />
+                            : <XCircle className="h-3 w-3 text-danger flex-shrink-0" />}
+                          <span className="text-text-secondary">{c.type.replace(/_/g, ' ')}</span>
+                          {c.detail && <span className="text-text-muted">— {c.detail}</span>}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
                 </div>
-              )}
+              );
+              })()}
             </div>
           </Card>
         </div>

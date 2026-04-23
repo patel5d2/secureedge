@@ -20,9 +20,10 @@ const MfaSchema = z.object({
   code: z.string().min(1),
 });
 
+// Spec: HttpOnly + Secure + SameSite=Strict
 const COOKIE_OPTS = {
   httpOnly: true,
-  sameSite: 'lax' as const,
+  sameSite: 'strict' as const,
   secure: config.NODE_ENV === 'production',
   maxAge: config.SESSION_TTL_SECONDS * 1000,
   path: '/',

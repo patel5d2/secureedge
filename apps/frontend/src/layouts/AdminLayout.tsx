@@ -1,4 +1,4 @@
-import { NavLink, Outlet, useNavigate } from 'react-router-dom';
+import { NavLink, Outlet, useNavigate, Navigate, useLocation } from 'react-router-dom';
 import { BarChart3, FileText, Users, UsersRound, Box, ScrollText, LogOut, ShieldCheck, Settings } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import Avatar from '../design-system/components/Avatar';
@@ -16,18 +16,21 @@ const navItems = [
 export default function AdminLayout() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const onLogout = async () => { await logout(); navigate('/login', { replace: true }); };
 
   if (user && user.role !== 'admin') {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-surface-2">
-        <div className="text-center">
-          <p className="text-lg font-semibold text-text-primary">Access Denied</p>
-          <p className="mt-1 text-sm text-text-secondary">You need admin privileges to access this console.</p>
-          <button onClick={() => navigate('/portal')} className="mt-4 text-sm text-info hover:underline">Go to Portal</button>
-        </div>
-      </div>
+      <Navigate
+        to="/access-denied"
+        replace
+        state={{
+          reason: 'The admin console is restricted to users with the admin role.',
+          requiredRole: 'admin',
+          attemptedPath: location.pathname,
+        }}
+      />
     );
   }
 
