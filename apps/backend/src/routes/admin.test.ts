@@ -579,4 +579,210 @@ describe('Audit log', () => {
     expect(res.status).toBe(200);
     expect(res.body.events).toHaveLength(1);
   });
+
+  it('GET /audit-log with outcome filter', async () => {
+    mockQuery.mockResolvedValueOnce({ rows: [adminUser] });
+    mockQuery.mockResolvedValueOnce({ rows: [{ count: '1' }] });
+    mockQuery.mockResolvedValueOnce({ rows: [{ id: 'ev-1' }] });
+
+    const res = await request(app)
+      .get('/api/admin/audit-log?outcome=denied&search=test')
+      .set('Cookie', `se_token=${adminToken()}`);
+
+    expect(res.status).toBe(200);
+  });
 });
+
+describe('Branch coverage — edge cases', () => {
+  const app = createApp();
+
+  it('GET /users with search param', async () => {
+    mockQuery.mockResolvedValueOnce({ rows: [adminUser] });
+    mockQuery.mockResolvedValueOnce({ rows: [{ total: 1 }] });
+    mockQuery.mockResolvedValueOnce({ rows: [{ id: 'u-1', email: 'alice@t.com' }] });
+
+    const res = await request(app)
+      .get('/api/admin/users?search=alice&page=2&limit=10')
+      .set('Cookie', `se_token=${adminToken()}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.page).toBe(2);
+    expect(res.body.limit).toBe(10);
+  });
+
+  it('POST /users with password hashes it', async () => {
+    mockQuery.mockResolvedValueOnce({ rows: [adminUser] });
+    mockQuery.mockResolvedValueOnce({ rows: [{ id: 'u-new', email: 'pw@t.com' }] });
+
+    const res = await request(app)
+      .post('/api/admin/users')
+      .set('Cookie', `se_token=${adminToken()}`)
+      .send({ email: 'pw@t.com', full_name: 'Password User', password: 'securepass123' });
+
+    expect(res.status).toBe(201);
+    // Verify bcrypt hash was passed (5th param is password_hash, not null)
+    const insertCall = mockQuery.mock.calls[mockQuery.mock.calls.length - 1];
+    expect(insertCall[1][4]).toBeTruthy(); // password_hash is not null
+  });
+
+  it('PUT /users/:id with password update', async () => {
+    mockQuery.mockResolvedValueOnce({ rows: [adminUser] });
+    mockQuery.mockResolvedValueOnce({ rows: [{ id: 'u-1', full_name: 'X' }] });
+
+    const res = await request(app)
+      .put('/api/admin/users/u-1')
+      .set('Cookie', `se_token=${adminToken()}`)
+      .send({ password: 'newpassword123' });
+
+    expect(res.status).toBe(200);
+  });
+
+  it('PUT /users/:id with empty body returns user: null', async () => {
+    mockQuery.mockResolvedValueOnce({ rows: [adminUser] });
+
+    const res = await request(app)
+      .put('/api/admin/users/u-1')
+      .set('Cookie', `se_token=${adminToken()}`)
+      .send({});
+
+    expect(res.status).toBe(200);
+    expect(res.body.user).toBeNull();
+  });
+
+  it('DELETE /users/:id returns 404 for nonexistent user', async () => {
+    mockQuery.mockResolvedValueOnce({ rows: [adminUser] });
+    mockQuery.mockResolvedValueOnce({ rows: [] });
+
+    const res = await request(app)
+      .delete('/api/admin/users/nonexistent')
+      .set('Cookie', `se_token=${adminToken()}`);
+
+    expect(res.status).toBe(404);
+  });
+
+  it('GET /applications with search param', async () => {
+    mockQuery.mockResolvedValueOnce({ rows: [adminUser] });
+    mockQuery.mockResolvedValueOnce({ rows: [{ total: 1 }] });
+    mockQuery.mockResolvedValueOnce({ rows: [{ id: 'app-1' }] });
+
+    const res = await request(app)
+      .get('/api/admin/applications?search=dash')
+      .set('Cookie', `se_token=${adminToken()}`);
+
+    expect(res.status).toBe(200);
+  });
+
+  it('PUT /applications/:id with empty body returns application: null', async () => {
+    mockQuery.mockResolvedValueOnce({ rows: [adminUser] });
+
+    const res = await request(app)
+      .put('/api/admin/applications/app-1')
+      .set('Cookie', `se_token=${adminToken()}`)
+      .send({});
+
+    expect(res.status).toBe(200);
+    expect(res.body.application).toBeNull();
+  });
+
+  it('DELETE /applications/:id returns 404', async () => {
+    mockQuery.mockResolvedValueOnce({ rows: [adminUser] });
+    mockQuery.mockResolvedValueOnce({ rows: [] }); // nullify
+    mockQuery.mockResolvedValueOnce({ rows: [] }); // delete not found
+
+    const res = await request(app)
+      .delete('/api/admin/applications/nonexistent')
+      .set('Cookie', `se_token=${adminToken()}`);
+
+    expect(res.status).toBe(404);
+  });
+
+  it('PUT /groups/:id with empty body returns group: null', async () => {
+    mockQuery.mockResolvedValueOnce({ rows: [adminUser] });
+
+    const res = await request(app)
+      .put('/api/admin/groups/g-1')
+      .set('Cookie', `se_token=${adminToken()}`)
+      .send({});
+
+    expect(res.status).toBe(200);
+    expect(res.body.group).toBeNull();
+  });
+
+  it('PUT /devices/:id with empty body returns device: null', async () => {
+    mockQuery.mockResolvedValueOnce({ rows: [adminUser] });
+
+    const res = await request(app)
+      .put('/api/admin/devices/d-1')
+      .set('Cookie', `se_token=${adminToken()}`)
+      .send({});
+
+    expect(res.status).toBe(200);
+    expect(res.body.device).toBeNull();
+  });
+
+  it('GET /policies with groups returns affected user count', async () => {
+    mockQuery.mockResolvedValueOnce({ rows: [adminUser] });
+    mockQuery.mockResolvedValueOnce({
+      rows: [{
+        id: 'p-1', name: 'Policy', status: 'active',
+        rules: { who: { groups: ['g-1'], users: ['u-1'] }, what: { applications: ['app-1'] } },
+      }],
+    });
+    mockQuery.mockResolvedValueOnce({ rows: [{ count: '5' }] }); // affected count
+
+    const res = await request(app)
+      .get('/api/admin/policies')
+      .set('Cookie', `se_token=${adminToken()}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.policies[0].affected_user_count).toBe(6); // 5 from groups + 1 user
+  });
+
+  it('GET /groups with search param', async () => {
+    mockQuery.mockResolvedValueOnce({ rows: [adminUser] });
+    mockQuery.mockResolvedValueOnce({ rows: [{ total: 1 }] });
+    mockQuery.mockResolvedValueOnce({ rows: [{ id: 'g-1' }] });
+
+    const res = await request(app)
+      .get('/api/admin/groups?search=eng')
+      .set('Cookie', `se_token=${adminToken()}`);
+
+    expect(res.status).toBe(200);
+  });
+
+  it('DELETE /groups/:id returns 404', async () => {
+    mockQuery.mockResolvedValueOnce({ rows: [adminUser] });
+    mockQuery.mockResolvedValueOnce({ rows: [] });
+
+    const res = await request(app)
+      .delete('/api/admin/groups/nonexistent')
+      .set('Cookie', `se_token=${adminToken()}`);
+
+    expect(res.status).toBe(404);
+  });
+
+  it('PUT /groups/:id returns 404', async () => {
+    mockQuery.mockResolvedValueOnce({ rows: [adminUser] });
+    mockQuery.mockResolvedValueOnce({ rows: [] });
+
+    const res = await request(app)
+      .put('/api/admin/groups/nonexistent')
+      .set('Cookie', `se_token=${adminToken()}`)
+      .send({ name: 'X' });
+
+    expect(res.status).toBe(404);
+  });
+
+  it('PUT /applications/:id returns 404', async () => {
+    mockQuery.mockResolvedValueOnce({ rows: [adminUser] });
+    mockQuery.mockResolvedValueOnce({ rows: [] });
+
+    const res = await request(app)
+      .put('/api/admin/applications/nonexistent')
+      .set('Cookie', `se_token=${adminToken()}`)
+      .send({ name: 'X' });
+
+    expect(res.status).toBe(404);
+  });
+});
+
