@@ -13,22 +13,42 @@ body,
 }
 
 body {
-  font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  font-family: 'Geist', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  background: #FDFCF8;
+  color: #0E0D0A;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* Display face — used for headings, hero copy, and the italicized "emphasized noun"
+   pattern that gives SecureEdge its voice. Apply via .font-display or the Tailwind
+   utility of the same name. */
+.font-display,
+.display {
+  font-family: 'Instrument Serif', 'Iowan Old Style', 'Palatino', Georgia, serif;
+  letter-spacing: -0.02em;
+}
+
+/* Custom scrollbar — warm hairlines */
 *::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
 *::-webkit-scrollbar-thumb {
-  background: #d6dbe6;
+  background: #D9D2BB;
   border-radius: 8px;
 }
 *::-webkit-scrollbar-thumb:hover {
-  background: #b9c1d1;
+  background: #B9B09A;
 }
 .scroll-dark *::-webkit-scrollbar-thumb {
-  background: #30363D;
+  background: #2A2721;
 }
+
+/* Pulse used for live status dots (animate the ring, not the element). */
+@keyframes se-pulse-ring {
+  0%   { box-shadow: 0 0 0 0   rgba(60, 177, 58, 0.55); }
+  70%  { box-shadow: 0 0 0 10px rgba(60, 177, 58, 0);    }
+  100% { box-shadow: 0 0 0 0   rgba(60, 177, 58, 0);    }
+}
+.pulse-ring { animation: se-pulse-ring 1.6s ease-out infinite; }

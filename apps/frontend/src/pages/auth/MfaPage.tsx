@@ -85,20 +85,22 @@ export default function MfaPage() {
   };
 
   return (
-    <form onSubmit={onSubmit} className="space-y-6" id="mfa-form">
+    <form onSubmit={onSubmit} id="mfa-form">
       <div className="flex flex-col items-center gap-3 text-center">
-        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/5">
-          <ShieldCheck className="h-6 w-6 text-primary" />
+        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-ink-900/5">
+          <ShieldCheck className="h-6 w-6 text-ink-900" strokeWidth={1.6} />
         </div>
         <div>
-          <h1 className="text-xl font-semibold text-text-primary">Verify your identity</h1>
-          <p className="mt-1 text-sm text-text-secondary">
-            Enter the 6-digit code from your authenticator app
+          <h1 className="font-display text-[32px] leading-[1.08] tracking-[-0.02em] text-ink-900">
+            Verify your identity
+          </h1>
+          <p className="mt-2 text-sm text-ink-500">
+            Enter the 6-digit code from your authenticator app.
           </p>
         </div>
       </div>
 
-      <div className="flex justify-center gap-2" onPaste={handlePaste}>
+      <div className="mt-7 flex justify-center gap-2" onPaste={handlePaste}>
         {digits.map((digit, i) => (
           <input
             key={i}
@@ -111,10 +113,10 @@ export default function MfaPage() {
             autoFocus={i === 0}
             onChange={(e) => handleChange(i, e.target.value)}
             onKeyDown={(e) => handleKeyDown(i, e)}
-            className={`h-14 w-11 rounded-lg border text-center text-xl font-semibold transition-colors focus:outline-none focus:ring-2 ${
+            className={`h-14 w-11 rounded-md border text-center font-mono text-xl font-semibold transition-colors duration-200 ease-out-soft focus:outline-none focus:ring-2 ${
               error
                 ? 'border-danger focus:border-danger focus:ring-danger/20'
-                : 'border-border focus:border-primary focus:ring-primary/20'
+                : 'border-ink-100 focus:border-signal-500 focus:ring-signal-500/30'
             }`}
             aria-label={`Digit ${i + 1}`}
           />
@@ -122,7 +124,10 @@ export default function MfaPage() {
       </div>
 
       {error && (
-        <div className="rounded-md bg-danger/10 px-3 py-2 text-center text-sm text-danger animate-fade-in" role="alert">
+        <div
+          className="mt-4 rounded-md border border-[#F6C7BD] bg-[#FBEAE7] px-3 py-2 text-center text-sm text-[#8B2613] animate-fade-in"
+          role="alert"
+        >
           {error}
         </div>
       )}
@@ -133,20 +138,20 @@ export default function MfaPage() {
         variant="primary"
         size="lg"
         loading={loading}
-        className="w-full"
+        className="mt-6 w-full"
       >
-        Verify
+        Verify →
       </Button>
 
-      <div className="space-y-2 text-center text-xs text-text-muted">
-        <p className="font-medium text-text-secondary">
-          Dev hint: code is <span className="font-mono text-primary">123456</span>
+      <div className="mt-6 space-y-2 text-center">
+        <p className="text-[11px] text-ink-500">
+          Dev hint: code is <span className="font-mono text-ink-900">123456</span>
         </p>
-        <div className="flex flex-col gap-1">
-          <a href="#" className="text-info hover:underline">
+        <div className="flex flex-col gap-1 text-[11px]">
+          <a href="#" className="text-signal-700 underline underline-offset-2 hover:text-signal-600">
             Use a security key instead
           </a>
-          <a href="#" className="text-info hover:underline">
+          <a href="#" className="text-signal-700 underline underline-offset-2 hover:text-signal-600">
             I don't have my device
           </a>
         </div>
