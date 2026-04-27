@@ -28,3 +28,19 @@ export const apiLimiter = rateLimit({
     sendCommand: (...args: string[]) => redis.call(...args),
   }),
 });
+
+/**
+ * Tighter limiter for sign-up + resend-verification — abuse here is mass
+ * account creation and email-bombing, so we enforce 3 requests / hour / IP.
+ */
+export const signupLimiter = rateLimit({
+  windowMs: 60 * 60_000,
+  max: 3,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'too_many_requests' },
+  store: new RedisStore({
+    // @ts-expect-error — rate-limit-redis accepts ioredis client
+    sendCommand: (...args: string[]) => redis.call(...args),
+  }),
+});

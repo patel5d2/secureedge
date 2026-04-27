@@ -36,6 +36,7 @@ vi.mock('../services/auditLog', () => ({
 
 vi.mock('../middleware/rateLimit', () => ({
   authLimiter: (_req: any, _res: any, next: any) => next(),
+  signupLimiter: (_req: any, _res: any, next: any) => next(),
 }));
 
 vi.mock('../lib/logger', () => ({

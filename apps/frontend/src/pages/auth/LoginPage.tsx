@@ -1,5 +1,5 @@
 import { useState, useEffect, type FormEvent } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { api, ApiError } from '../../lib/api';
 import Button from '../../design-system/components/Button';
@@ -187,6 +187,12 @@ export default function LoginPage() {
       </div>
 
       <p className="mt-6 text-center text-[11px] text-ink-400">
+        New here?{' '}
+        <Link to="/signup" className="text-signal-700 underline underline-offset-2 hover:text-signal-600">
+          Create an account →
+        </Link>
+      </p>
+      <p className="mt-2 text-center text-[11px] text-ink-400">
         Having trouble?{' '}
         <a href="#" className="text-signal-700 underline underline-offset-2 hover:text-signal-600">
           Contact IT →
