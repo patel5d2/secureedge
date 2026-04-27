@@ -55,4 +55,6 @@ export const chartPalette = {
   accent: colors.accent,
   grid: '#ECE7D6',
   axis: '#8B8370',
+  // Stroke-dash applied to the "denied" series for color-blind differentiation.
+  deniedDash: '5 3',
 } as const;
