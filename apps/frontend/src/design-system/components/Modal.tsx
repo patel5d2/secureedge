@@ -1,4 +1,5 @@
-import { useEffect, type ReactNode } from 'react';
+import { Fragment, type ReactNode } from 'react';
+import { Dialog, Transition } from '@headlessui/react';
 import { X } from 'lucide-react';
 
 interface ModalProps {
@@ -18,50 +19,59 @@ const sizeClass: Record<NonNullable<ModalProps['size']>, string> = {
 };
 
 export default function Modal({ isOpen, onClose, title, children, footer, size = 'md' }: ModalProps) {
-  useEffect(() => {
-    if (!isOpen) return;
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-    };
-    window.addEventListener('keydown', onKey);
-    return () => {
-      document.body.style.overflow = prev;
-      window.removeEventListener('keydown', onKey);
-    };
-  }, [isOpen, onClose]);
-
-  if (!isOpen) return null;
-
   return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      onClick={onClose}
-    >
-      <div className="absolute inset-0 bg-primary/60 backdrop-blur-sm animate-fade-in" />
-      <div
-        className={`relative z-10 w-full ${sizeClass[size]} rounded-lg bg-surface shadow-xl animate-fade-in`}
-        onClick={(e) => e.stopPropagation()}
-      >
-        {title && (
-          <header className="flex items-center justify-between border-b border-border px-5 py-4">
-            <div className="text-base font-semibold text-text-primary">{title}</div>
-            <button
-              type="button"
-              aria-label="Close"
-              onClick={onClose}
-              className="rounded p-1 text-text-muted hover:bg-surface-2 hover:text-text-secondary"
+    <Transition.Root show={isOpen} as={Fragment}>
+      <Dialog as="div" className="relative z-50" onClose={onClose}>
+        <Transition.Child
+          as={Fragment}
+          enter="ease-out duration-300"
+          enterFrom="opacity-0"
+          enterTo="opacity-100"
+          leave="ease-in duration-200"
+          leaveFrom="opacity-100"
+          leaveTo="opacity-0"
+        >
+          <div className="fixed inset-0 bg-ink-900/60 backdrop-blur-sm transition-opacity" />
+        </Transition.Child>
+
+        <div className="fixed inset-0 z-10 w-screen overflow-y-auto">
+          <div className="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
+            <Transition.Child
+              as={Fragment}
+              enter="ease-out duration-300"
+              enterFrom="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+              enterTo="opacity-100 translate-y-0 sm:scale-100"
+              leave="ease-in duration-200"
+              leaveFrom="opacity-100 translate-y-0 sm:scale-100"
+              leaveTo="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
             >
-              <X className="h-5 w-5" />
-            </button>
-          </header>
-        )}
-        <div className="px-5 py-4">{children}</div>
-        {footer && <footer className="flex items-center justify-end gap-2 border-t border-border px-5 py-3">{footer}</footer>}
-      </div>
-    </div>
+              <Dialog.Panel className={`relative transform overflow-hidden rounded-lg bg-white text-left shadow-xl transition-all sm:my-8 w-full ${sizeClass[size]}`}>
+                {title && (
+                  <header className="flex items-center justify-between border-b border-ink-100 px-5 py-4">
+                    <Dialog.Title as="div" className="text-base font-semibold text-ink-900">
+                      {title}
+                    </Dialog.Title>
+                    <button
+                      type="button"
+                      aria-label="Close"
+                      onClick={onClose}
+                      className="rounded p-1 text-ink-500 hover:bg-ink-50 hover:text-ink-900"
+                    >
+                      <X className="h-5 w-5" />
+                    </button>
+                  </header>
+                )}
+                <div className="px-5 py-4">{children}</div>
+                {footer && (
+                  <footer className="flex items-center justify-end gap-2 border-t border-ink-100 px-5 py-3 bg-ink-50/50">
+                    {footer}
+                  </footer>
+                )}
+              </Dialog.Panel>
+            </Transition.Child>
+          </div>
+        </div>
+      </Dialog>
+    </Transition.Root>
   );
 }

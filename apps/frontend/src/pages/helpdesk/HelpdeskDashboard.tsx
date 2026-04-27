@@ -17,7 +17,7 @@ import {
 import { formatTime, formatRelative } from '../../lib/format';
 import { useRealtime } from '../../hooks/useRealtime';
 import Button from '../../design-system/components/Button';
-import Spinner from '../../design-system/components/Spinner';
+import Skeleton from '../../design-system/components/Skeleton';
 import { useToast } from '../../hooks/useToast';
 
 const sevConfig: Record<
@@ -73,8 +73,52 @@ export default function HelpdeskDashboard() {
 
   if (loading || !stats) {
     return (
-      <div className="flex h-64 items-center justify-center">
-        <Spinner size={32} />
+      <div className="-m-10 min-h-[calc(100vh-3.5rem)] bg-[#0A0906] p-10">
+        <header className="mb-8 flex items-baseline justify-between border-b border-white/10 pb-6">
+          <div className="space-y-3">
+            <Skeleton className="h-3 w-32 bg-white/5" />
+            <Skeleton className="h-12 w-48 bg-white/10" />
+          </div>
+          <Skeleton className="h-3 w-24 bg-white/5" />
+        </header>
+        <div className="mb-8 grid grid-cols-2 gap-px overflow-hidden rounded-lg bg-white/10 xl:grid-cols-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="bg-[#12100B] px-5 py-6">
+              <Skeleton className="h-4 w-24 bg-white/5 mb-4" />
+              <Skeleton className="h-12 w-16 bg-white/10" />
+            </div>
+          ))}
+        </div>
+        <div className="grid grid-cols-1 gap-6 xl:grid-cols-5">
+          <div className="rounded-lg border border-white/10 bg-[#12100B] xl:col-span-3 h-[500px]">
+            <div className="border-b border-white/10 px-5 py-4 space-y-2">
+              <Skeleton className="h-3 w-32 bg-white/5" />
+              <Skeleton className="h-6 w-48 bg-white/10" />
+            </div>
+            <div className="p-5 space-y-4">
+              {Array.from({ length: 8 }).map((_, i) => (
+                <Skeleton key={i} className="h-8 w-full bg-white/5" />
+              ))}
+            </div>
+          </div>
+          <div className="rounded-lg border border-white/10 bg-[#12100B] xl:col-span-2 h-[500px]">
+            <div className="border-b border-white/10 px-5 py-4 space-y-2">
+              <Skeleton className="h-3 w-24 bg-white/5" />
+              <Skeleton className="h-6 w-32 bg-white/10" />
+            </div>
+            <div className="p-5 space-y-4">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <div key={i} className="flex gap-3">
+                  <Skeleton className="h-6 w-16 rounded-full bg-white/5" />
+                  <div className="flex-1 space-y-2">
+                    <Skeleton className="h-4 w-3/4 bg-white/10" />
+                    <Skeleton className="h-3 w-1/2 bg-white/5" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
       </div>
     );
   }

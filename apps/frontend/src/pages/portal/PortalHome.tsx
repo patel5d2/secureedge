@@ -4,7 +4,7 @@ import { Search, AlertTriangle } from 'lucide-react';
 import { api, type AppCard, type AppsResponse } from '../../lib/api';
 import { iconForSlug } from '../../lib/app-icons';
 import Input from '../../design-system/components/Input';
-import Spinner from '../../design-system/components/Spinner';
+import Skeleton from '../../design-system/components/Skeleton';
 import AppDetail from './AppDetail';
 
 type Filter = 'all' | 'accessible' | 'restricted';
@@ -56,8 +56,37 @@ export default function PortalHome() {
 
   if (loading) {
     return (
-      <div className="flex h-64 items-center justify-center">
-        <Spinner size={32} />
+      <div className="space-y-6">
+        <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
+          <div className="space-y-2">
+            <Skeleton className="h-12 w-64 bg-ink-200" />
+            <Skeleton className="h-4 w-40 bg-ink-100" />
+          </div>
+          <Skeleton className="h-10 w-full sm:w-[280px] bg-ink-100" />
+        </div>
+        <div className="flex gap-1.5">
+          <Skeleton className="h-8 w-24 rounded-full bg-ink-100" />
+          <Skeleton className="h-8 w-28 rounded-full bg-ink-100" />
+          <Skeleton className="h-8 w-28 rounded-full bg-ink-100" />
+        </div>
+        <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {Array.from({ length: 8 }).map((_, i) => (
+            <div key={i} className="flex flex-col gap-3.5 rounded-lg border border-ink-100 bg-white p-[18px]">
+              <div className="flex items-start justify-between">
+                <Skeleton className="h-10 w-10 rounded-[10px] bg-ink-100" />
+                <Skeleton className="h-3 w-8 bg-ink-50" />
+              </div>
+              <div className="min-h-[52px] space-y-2 mt-2">
+                <Skeleton className="h-4 w-3/4 bg-ink-100" />
+                <Skeleton className="h-3 w-full bg-ink-50" />
+                <Skeleton className="h-3 w-5/6 bg-ink-50" />
+              </div>
+              <div className="mt-auto">
+                <Skeleton className="h-5 w-24 rounded-full bg-ink-100" />
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     );
   }

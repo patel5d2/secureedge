@@ -2,13 +2,15 @@ import {
   flexRender,
   getCoreRowModel,
   getPaginationRowModel,
+  getSortedRowModel,
   useReactTable,
   type ColumnDef,
   type OnChangeFn,
   type PaginationState,
+  type SortingState,
 } from '@tanstack/react-table';
-import { useMemo } from 'react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import { ChevronLeft, ChevronRight, ArrowDown, ArrowUp, ChevronsUpDown } from 'lucide-react';
 
 export type TableColumn<T> = ColumnDef<T, unknown>;
 
@@ -47,15 +49,21 @@ export default function Table<T>({
   loading = false,
 }: TableProps<T>) {
   const initialPagination = useMemo<PaginationState>(() => ({ pageIndex: 0, pageSize }), [pageSize]);
+  const [sorting, setSorting] = useState<SortingState>([]);
 
   const table = useReactTable({
     data,
     columns,
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: manualPagination ? undefined : getPaginationRowModel(),
+    getSortedRowModel: getSortedRowModel(),
     manualPagination,
     pageCount: manualPagination ? pageCount ?? -1 : undefined,
-    state: manualPagination && pagination ? { pagination } : undefined,
+    state: {
+      sorting,
+      ...(manualPagination && pagination ? { pagination } : {}),
+    },
+    onSortingChange: setSorting,
     onPaginationChange: manualPagination ? onPaginationChange : undefined,
     initialState: !manualPagination ? { pagination: initialPagination } : undefined,
   });
@@ -75,9 +83,22 @@ export default function Table<T>({
                 {hg.headers.map((header) => (
                   <th
                     key={header.id}
-                    className={`border-b border-border px-4 ${paddingY} text-left text-xs font-semibold uppercase tracking-wider text-text-secondary`}
+                    className={`border-b border-border px-4 ${paddingY} text-left text-xs font-semibold uppercase tracking-wider text-text-secondary ${
+                      header.column.getCanSort() ? 'cursor-pointer select-none hover:bg-surface-2' : ''
+                    }`}
+                    onClick={header.column.getToggleSortingHandler()}
                   >
-                    {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
+                    <div className="flex items-center gap-1">
+                      {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
+                      {header.column.getCanSort() && (
+                        <span className="text-text-muted">
+                          {{
+                            asc: <ArrowUp className="h-3 w-3" />,
+                            desc: <ArrowDown className="h-3 w-3" />,
+                          }[header.column.getIsSorted() as string] ?? <ChevronsUpDown className="h-3 w-3" />}
+                        </span>
+                      )}
+                    </div>
                   </th>
                 ))}
               </tr>
