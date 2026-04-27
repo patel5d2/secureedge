@@ -7,6 +7,8 @@ import HelpdeskLayout from './layouts/HelpdeskLayout';
 import LoginPage from './pages/auth/LoginPage';
 import MfaPage from './pages/auth/MfaPage';
 import AccessDeniedPage from './pages/auth/AccessDeniedPage';
+import SignUpPage from './pages/auth/SignUpPage';
+import VerifyEmailPage from './pages/auth/VerifyEmailPage';
 
 import PortalHome from './pages/portal/PortalHome';
 import SessionsPage from './pages/portal/SessionsPage';
@@ -45,6 +47,8 @@ export const router = createBrowserRouter([
     children: [
       { path: '/login', element: <LoginPage /> },
       { path: '/mfa', element: <MfaPage /> },
+      { path: '/signup', element: <SignUpPage /> },
+      { path: '/verify', element: <VerifyEmailPage /> },
     ],
   },
   {
