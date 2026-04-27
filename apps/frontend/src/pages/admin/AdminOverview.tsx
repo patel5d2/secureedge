@@ -1,15 +1,5 @@
-import { useEffect, useState } from 'react';
+import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
 import { Users, FileText, ShieldAlert, Activity, CheckCircle2, ArrowUpRight } from 'lucide-react';
-import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  Legend,
-} from 'recharts';
 import {
   api,
   type OverviewStats,
@@ -18,32 +8,56 @@ import {
 } from '../../lib/api';
 import { formatTime } from '../../lib/format';
 import Spinner from '../../design-system/components/Spinner';
-import { colors } from '../../design-system/tokens';
 import { Link } from 'react-router-dom';
 
+const AccessEventsChart = lazy(() => import('./AccessEventsChart'));
+
+const REFRESH_MS = 60_000;
+
 /**
- * Admin Overview — editorial headline, single hero number, a thin row of stat chips,
- * a serif-labeled chart, and a live denials feed in the newspaper column on the right.
+ * Admin Overview — editorial headline, stat chips, the access-events line chart
+ * (lazy-loaded so /admin doesn't pay for recharts on first paint), and the live
+ * denials feed in the newspaper column on the right.
  */
 export default function AdminOverview() {
   const [stats, setStats] = useState<OverviewStats | null>(null);
-  const [events, setEvents] = useState<AccessEvent[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [events, setEvents] = useState<AccessEvent[] | null>(null);
+  const [refreshedAt, setRefreshedAt] = useState<Date | null>(null);
 
+  // Chart and event-feed each fetch independently so neither blocks the other.
   useEffect(() => {
-    Promise.all([
-      api.get<OverviewStats>('/admin/overview'),
-      api.get<RecentEventsResponse>('/admin/recent-events'),
-    ])
-      .then(([s, e]) => {
-        setStats(s);
-        setEvents(e.events);
-        setLoading(false);
-      })
-      .catch(() => setLoading(false));
+    let cancelled = false;
+    const load = async () => {
+      try {
+        const s = await api.get<OverviewStats>('/admin/overview');
+        if (!cancelled) {
+          setStats(s);
+          setRefreshedAt(new Date());
+        }
+      } catch {
+        /* ignore — keep last good data on the screen */
+      }
+    };
+    load();
+    const id = window.setInterval(load, REFRESH_MS);
+    return () => {
+      cancelled = true;
+      window.clearInterval(id);
+    };
   }, []);
 
-  if (loading || !stats) {
+  useEffect(() => {
+    let cancelled = false;
+    api
+      .get<RecentEventsResponse>('/admin/recent-events')
+      .then((e) => !cancelled && setEvents(e.events))
+      .catch(() => !cancelled && setEvents([]));
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  if (!stats) {
     return (
       <div className="flex h-64 items-center justify-center">
         <Spinner size={32} />
@@ -51,13 +65,8 @@ export default function AdminOverview() {
     );
   }
 
-  const chartData = stats.trend.labels.map((l, i) => ({
-    time: l.slice(11, 16),
-    Allowed: stats.trend.allowed[i],
-    Denied: stats.trend.denied[i],
-  }));
-
-  const totalEvents = stats.trend.allowed.reduce((a, b) => a + b, 0) +
+  const totalEvents =
+    stats.trend.allowed.reduce((a, b) => a + b, 0) +
     stats.trend.denied.reduce((a, b) => a + b, 0);
 
   const statChips: Array<{
@@ -74,17 +83,18 @@ export default function AdminOverview() {
 
   return (
     <div className="space-y-10">
-      {/* Editorial header */}
       <header className="border-b border-ink-100 pb-8">
         <div className="flex items-baseline gap-4 text-[11px] uppercase tracking-[0.08em] text-ink-400">
-          <span className="font-mono">{new Date().toLocaleDateString('en-US', {
-            weekday: 'long',
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric',
-          })}</span>
+          <span className="font-mono">
+            {new Date().toLocaleDateString('en-US', {
+              weekday: 'long',
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric',
+            })}
+          </span>
           <span className="h-px flex-1 bg-ink-100" />
-          <span className="font-mono">Live · auto-refresh 60s</span>
+          <RefreshIndicator refreshedAt={refreshedAt} />
         </div>
         <h1 className="mt-3 font-display text-[56px] leading-[1.05] tracking-[-0.02em] text-ink-900">
           Today, the gate answered{' '}
@@ -95,16 +105,13 @@ export default function AdminOverview() {
         </p>
       </header>
 
-      {/* Stat chips */}
       <div className="grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-ink-100 bg-ink-100 xl:grid-cols-4">
         {statChips.map((s) => (
           <StatChip key={s.label} {...s} />
         ))}
       </div>
 
-      {/* Chart + events */}
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-5">
-        {/* Chart */}
         <section className="xl:col-span-3 rounded-lg border border-ink-100 bg-white p-6">
           <div className="mb-5 flex items-end justify-between border-b border-ink-100 pb-4">
             <div>
@@ -117,54 +124,16 @@ export default function AdminOverview() {
             </div>
             <LegendSwatch />
           </div>
-          <div className="h-72">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={chartData} margin={{ top: 8, right: 8, left: -20, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="2 4" stroke={colors.border} vertical={false} />
-                <XAxis
-                  dataKey="time"
-                  tick={{ fontSize: 11, fill: colors.textMuted, fontFamily: 'Geist Mono' }}
-                  axisLine={{ stroke: colors.border }}
-                  tickLine={false}
-                />
-                <YAxis
-                  tick={{ fontSize: 11, fill: colors.textMuted, fontFamily: 'Geist Mono' }}
-                  axisLine={false}
-                  tickLine={false}
-                />
-                <Tooltip
-                  contentStyle={{
-                    fontSize: 12,
-                    borderRadius: 8,
-                    border: `1px solid ${colors.border}`,
-                    background: colors.surface,
-                    boxShadow: '0 8px 24px -8px rgba(14,13,10,0.12)',
-                  }}
-                  labelStyle={{ fontFamily: 'Geist Mono', color: colors.textMuted }}
-                />
-                <Legend
-                  wrapperStyle={{ fontSize: 12, fontFamily: 'Geist Mono', display: 'none' }}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="Allowed"
-                  stroke={colors.success}
-                  strokeWidth={1.75}
-                  dot={false}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="Denied"
-                  stroke={colors.danger}
-                  strokeWidth={1.75}
-                  dot={false}
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
+
+          {totalEvents === 0 ? (
+            <ChartEmptyState />
+          ) : (
+            <Suspense fallback={<div className="h-72 animate-pulse rounded-md bg-ink-50" aria-hidden="true" />}>
+              <AccessEventsChart trend={stats.trend} />
+            </Suspense>
+          )}
         </section>
 
-        {/* Live feed */}
         <section className="xl:col-span-2 flex flex-col rounded-lg border border-ink-100 bg-white">
           <div className="flex items-center justify-between border-b border-ink-100 px-5 py-4">
             <div>
@@ -177,14 +146,18 @@ export default function AdminOverview() {
             </div>
             <span className="inline-flex items-center gap-1.5 font-mono text-[10px] text-ink-400">
               <span className="relative flex h-2 w-2">
-                <span className="absolute inset-0 animate-pulse-ring rounded-full bg-[#D1432B]" />
-                <span className="relative h-2 w-2 rounded-full bg-[#D1432B]" />
+                <span className="absolute inset-0 animate-pulse-dot rounded-full bg-danger" />
+                <span className="relative h-2 w-2 rounded-full bg-danger" />
               </span>
               LIVE
             </span>
           </div>
           <div className="flex-1 divide-y divide-ink-100 overflow-y-auto">
-            {events.length === 0 ? (
+            {events === null ? (
+              <div className="flex h-full items-center justify-center p-8">
+                <Spinner size={20} />
+              </div>
+            ) : events.length === 0 ? (
               <p className="p-8 text-center text-sm text-ink-400">No recent denials. Nice.</p>
             ) : (
               events.map((ev) => <DenialRow key={ev.id} ev={ev} />)
@@ -200,7 +173,6 @@ export default function AdminOverview() {
         </section>
       </div>
 
-      {/* System health */}
       <section>
         <div className="mb-4 flex items-baseline gap-4">
           <h2 className="font-display text-[28px] leading-tight tracking-[-0.02em] text-ink-900">
@@ -217,7 +189,7 @@ export default function AdminOverview() {
               key={svc}
               className="flex items-center gap-2.5 rounded-md border border-ink-100 bg-white px-3.5 py-3"
             >
-              <CheckCircle2 className="h-4 w-4 text-[#3CB13A]" strokeWidth={1.75} />
+              <CheckCircle2 className="h-4 w-4 text-success" strokeWidth={1.75} />
               <div className="min-w-0 flex-1">
                 <p className="truncate text-[13px] font-medium text-ink-900">{svc}</p>
                 <p className="font-mono text-[10px] text-ink-400">operational</p>
@@ -226,6 +198,38 @@ export default function AdminOverview() {
           ))}
         </div>
       </section>
+    </div>
+  );
+}
+
+function RefreshIndicator({ refreshedAt }: { refreshedAt: Date | null }) {
+  const [, force] = useState(0);
+  // tick every 5s so the "12s ago" copy stays fresh between fetches
+  useEffect(() => {
+    const id = window.setInterval(() => force((n) => n + 1), 5_000);
+    return () => window.clearInterval(id);
+  }, []);
+  if (!refreshedAt) return <span className="font-mono">Loading…</span>;
+  const ago = Math.max(0, Math.round((Date.now() - refreshedAt.getTime()) / 1000));
+  const label = ago < 60 ? `${ago}s` : `${Math.round(ago / 60)}m`;
+  return (
+    <span className="font-mono" aria-live="polite">
+      Live · refreshed {label} ago
+    </span>
+  );
+}
+
+function ChartEmptyState() {
+  return (
+    <div
+      className="flex h-72 flex-col items-center justify-center rounded-md bg-ink-50 text-center"
+      role="img"
+      aria-label="No access events recorded in the last 24 hours"
+    >
+      <p className="font-display text-2xl text-ink-700">Quiet on the wire.</p>
+      <p className="mt-1 max-w-xs text-sm text-ink-500">
+        No access events recorded in the last 24 hours.
+      </p>
     </div>
   );
 }
@@ -244,8 +248,8 @@ function StatChip({
   const toneColor = {
     neutral: 'text-ink-700',
     signal: 'text-signal-600',
-    warn: 'text-[#D89422]',
-    danger: 'text-[#D1432B]',
+    warn: 'text-warning',
+    danger: 'text-danger',
   }[tone];
   return (
     <div className="relative bg-white px-5 py-5">
@@ -266,10 +270,14 @@ function LegendSwatch() {
   return (
     <div className="flex items-center gap-4 font-mono text-[10px] text-ink-500">
       <span className="inline-flex items-center gap-1.5">
-        <span className="h-[2px] w-5 bg-[#3CB13A]" /> Allowed
+        <span className="h-[2px] w-5 bg-success" /> Allowed
       </span>
       <span className="inline-flex items-center gap-1.5">
-        <span className="h-[2px] w-5 bg-[#D1432B]" /> Denied
+        {/* dashed swatch matches chartPalette.deniedDash */}
+        <svg width="20" height="2" aria-hidden="true">
+          <line x1="0" y1="1" x2="20" y2="1" stroke="currentColor" strokeDasharray="5 3" className="text-danger" />
+        </svg>
+        Denied
       </span>
     </div>
   );
@@ -278,7 +286,7 @@ function LegendSwatch() {
 function DenialRow({ ev }: { ev: AccessEvent }) {
   return (
     <div className="flex items-start gap-3 px-5 py-3.5">
-      <span className="mt-1.5 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-[#D1432B]" />
+      <span className="mt-1.5 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-danger" />
       <div className="min-w-0 flex-1">
         <div className="flex items-baseline justify-between gap-2">
           <p className="truncate text-[13px] font-semibold text-ink-900">
@@ -291,7 +299,7 @@ function DenialRow({ ev }: { ev: AccessEvent }) {
         <p className="mt-0.5 truncate text-[12px] text-ink-500">
           tried <span className="text-ink-700">{ev.app_name}</span>
         </p>
-        <p className="mt-1 inline-block rounded-sm bg-[#FBEAE7] px-1.5 py-0.5 font-mono text-[10px] text-[#8B2613]">
+        <p className="mt-1 inline-block rounded-sm bg-danger-surface px-1.5 py-0.5 font-mono text-[10px] text-danger-ink">
           {ev.deny_reason?.replace(/_/g, ' ')}
         </p>
       </div>

@@ -24,8 +24,13 @@ function passwordChecks(pw: string): PasswordCheck[] {
   ];
 }
 
+// Cloudflare's published "always-passes" sitekey, documented at
+// https://developers.cloudflare.com/turnstile/troubleshooting/testing/.
+// Used as a fallback so dev/staging doesn't need a real Cloudflare account.
+// In production, set VITE_TURNSTILE_SITE_KEY at build time to a real sitekey.
 const TURNSTILE_SITE_KEY: string =
-  (import.meta.env && (import.meta.env as { VITE_TURNSTILE_SITE_KEY?: string }).VITE_TURNSTILE_SITE_KEY) || '';
+  (import.meta.env && (import.meta.env as { VITE_TURNSTILE_SITE_KEY?: string }).VITE_TURNSTILE_SITE_KEY) ||
+  '1x00000000000000000000AA';
 
 declare global {
   interface Window {
@@ -55,12 +60,9 @@ export default function SignUpPage() {
   const passwordOk = checks.every((c) => c.ok);
   const confirmOk = confirm.length > 0 && confirm === password;
 
-  // Turnstile widget. In dev (no site key) we silently use the bypass token.
+  // Turnstile widget. Falls back to Cloudflare's published test sitekey when
+  // VITE_TURNSTILE_SITE_KEY is not provided, so the form works in dev/staging.
   useEffect(() => {
-    if (!TURNSTILE_SITE_KEY) {
-      setCaptchaToken('dev-bypass');
-      return;
-    }
     let cancelled = false;
     const SCRIPT_ID = 'cf-turnstile-script';
     function mount() {
@@ -124,10 +126,8 @@ export default function SignUpPage() {
       } else {
         setError('Something went wrong. Please try again.');
       }
-      if (TURNSTILE_SITE_KEY) {
-        setCaptchaToken('');
-        window.turnstile?.reset();
-      }
+      setCaptchaToken('');
+      window.turnstile?.reset();
     } finally {
       setLoading(false);
     }

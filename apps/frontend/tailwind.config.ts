@@ -36,9 +36,9 @@ export default {
         surface: { DEFAULT: '#FFFFFF', 2: '#FDFCF8', dark: '#0E0D0A', dark2: '#1A1814' },
         border: { DEFAULT: '#ECE7D6', dark: '#2A2721' },
         text: { primary: '#0E0D0A', secondary: '#5E5749', muted: '#8B8370', invert: '#FDFCF8' },
-        success: '#3CB13A',
-        warning: '#D89422',
-        danger: '#D1432B',
+        success: { DEFAULT: '#3CB13A', surface: '#E8F5E7', ink: '#1F6E20' },
+        warning: { DEFAULT: '#D89422', surface: '#FCEFD9', ink: '#7A4F0F' },
+        danger:  { DEFAULT: '#D1432B', surface: '#FBEAE7', ink: '#8B2613' },
         info: '#3570B0',
       },
       fontFamily: {
