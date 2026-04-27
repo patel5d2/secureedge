@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@headlessui/react": "^2.2.10",
+    "@simplewebauthn/browser": "^13.3.0",
     "@tanstack/react-table": "^8.11.2",
     "@tanstack/react-virtual": "^3.0.1",
     "framer-motion": "^12.38.0",

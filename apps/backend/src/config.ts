@@ -10,7 +10,25 @@ export const config = {
   SESSION_TTL_SECONDS: parseInt(process.env.SESSION_TTL_SECONDS || '3600', 10),
   CORS_ORIGIN: process.env.CORS_ORIGIN || 'http://localhost:5173',
   NODE_ENV: process.env.NODE_ENV || 'development',
+
+  // ── OIDC SSO (optional — SSO is disabled when these are absent) ─────
+  OIDC_ISSUER: process.env.OIDC_ISSUER || '',
+  OIDC_CLIENT_ID: process.env.OIDC_CLIENT_ID || '',
+  OIDC_CLIENT_SECRET: process.env.OIDC_CLIENT_SECRET || '',
+  OIDC_REDIRECT_URI:
+    process.env.OIDC_REDIRECT_URI || 'http://localhost:3001/api/auth/sso/callback',
+  OIDC_PROVIDER_NAME: process.env.OIDC_PROVIDER_NAME || 'SSO',
+
+  // ── WebAuthn / Passkeys ─────────────────────────────────────────────
+  WEBAUTHN_RP_NAME: process.env.WEBAUTHN_RP_NAME || 'SecureEdge',
+  WEBAUTHN_RP_ID: process.env.WEBAUTHN_RP_ID || 'localhost',
+  WEBAUTHN_ORIGIN: process.env.WEBAUTHN_ORIGIN || 'http://localhost:5173',
 };
+
+/** True when all required OIDC env vars are present. */
+export function isOidcEnabled(): boolean {
+  return !!(config.OIDC_ISSUER && config.OIDC_CLIENT_ID && config.OIDC_CLIENT_SECRET);
+}
 
 // JWT secret strength validation
 if (config.NODE_ENV === 'production') {

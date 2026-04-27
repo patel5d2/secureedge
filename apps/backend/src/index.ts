@@ -18,6 +18,9 @@ import portalRouter from './routes/portal';
 import adminRouter from './routes/admin';
 import helpdeskRouter from './routes/helpdesk';
 import eventsRouter from './routes/events';
+import ssoRouter from './routes/sso';
+import webauthnRouter from './routes/webauthn';
+import { openApiDoc } from './lib/openapi';
 
 const app = express();
 
@@ -71,7 +74,8 @@ function csrfMiddleware(req: Request, res: Response, next: NextFunction): void {
   const method = req.method.toUpperCase();
   const needsCheck =
     ['POST', 'PUT', 'DELETE', 'PATCH'].includes(method) &&
-    (req.path.startsWith('/api/admin') || req.path.startsWith('/api/helpdesk'));
+    (req.path.startsWith('/api/admin') || req.path.startsWith('/api/helpdesk')) &&
+    !req.path.startsWith('/api/auth/sso/callback');
 
   if (!needsCheck) {
     return next();
@@ -111,10 +115,33 @@ app.get('/api/metrics', async (_req, res) => {
 
 // Mount
 app.use('/api/auth', authRouter);
+app.use('/api/auth/sso', ssoRouter);
+app.use('/api/auth/webauthn', webauthnRouter);
 app.use('/api/portal', portalRouter);
 app.use('/api/admin', adminRouter);
 app.use('/api/helpdesk', helpdeskRouter);
 app.use('/api/events', eventsRouter);
+
+// OpenAPI documentation
+app.get('/api/docs/openapi.json', (_req, res) => {
+  res.json(openApiDoc);
+});
+app.get('/api/docs', (_req, res) => {
+  res.setHeader('Content-Type', 'text/html');
+  res.send(`<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <title>SecureEdge API Docs</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui.css"/>
+</head>
+<body>
+  <div id="swagger-ui"></div>
+  <script src="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui-bundle.js"></script>
+  <script>SwaggerUIBundle({ url: '/api/docs/openapi.json', dom_id: '#swagger-ui' });</script>
+</body>
+</html>`);
+});
 
 // 404 for unmatched API
 app.use('/api', (_req, res) => {
