@@ -140,7 +140,7 @@ export default function AppDetail({ appId, onClose }: AppDetailProps) {
                                   {isAllowed ? 'Access granted' : 'Access denied'}
                                 </Badge>
                                 {data.app.protocol && (
-                                  <Badge variant="secondary">{data.app.protocol.toUpperCase()}</Badge>
+                                  <Badge variant="gray">{data.app.protocol.toUpperCase()}</Badge>
                                 )}
                               </div>
                             </div>
@@ -195,7 +195,7 @@ export default function AppDetail({ appId, onClose }: AppDetailProps) {
                               </p>
                               <div className="flex flex-wrap gap-2">
                                 {data.accessGroups.map((g) => (
-                                  <Badge key={g.id} variant="secondary">
+                                  <Badge key={g.id} variant="gray">
                                     {g.name}
                                   </Badge>
                                 ))}

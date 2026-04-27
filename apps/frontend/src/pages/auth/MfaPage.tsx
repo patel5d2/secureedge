@@ -57,9 +57,7 @@ export default function MfaPage() {
     setPasskeyLoading(true);
     try {
       // 1. Get authentication options from server
-      const options = await api.post<PublicKeyCredentialRequestOptionsJSON>(
-        '/auth/webauthn/authenticate/options'
-      );
+      const options = await api.post<any>('/auth/webauthn/authenticate/options');
 
       // 2. Trigger browser ceremony (Touch ID, Face ID, security key, etc.)
       const credential = await startAuthentication({ optionsJSON: options });
